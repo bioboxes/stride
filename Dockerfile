@@ -1,4 +1,4 @@
-FROM bioboxes/biobox-minimal-base@sha256:c2c5acb0d0be4052d4b927a7fd489738342f163f849fcbc852fc25b000b4f6cb
+FROM bioboxes/biobox-minimal-base@sha256:908bc44aaa5de9a9b519cc3548b7d1e37c8f4f71a815f43ea71091e2980e9974
 
 ADD image/bin    /usr/local/bin
 ADD image/share  /usr/local/share
