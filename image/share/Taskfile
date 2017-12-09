@@ -1,1 +1,2 @@
 default: stride.sh ${READS} ${CONTIGS}
+single-cell: single_cell.sh ${READS} ${CONTIGS}
