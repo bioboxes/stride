@@ -1,1 +1,1 @@
-default: ""
+default: stride.sh ${READS} ${CONTIGS}
