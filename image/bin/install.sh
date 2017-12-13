@@ -10,10 +10,9 @@ BUILD="wget ca-certificates"
 apt-get update --yes
 apt-get install --yes --no-install-recommends ${BUILD}
 
-# Install tool
-URL="https://github.com/ythuang0522/StriDe/raw/master/StriDe_Linux64bit_v1.0.tar.gz"
-wget ${URL} --quiet --output-document - \
-  | tar xzf - --directory /usr/local/bin
+export PATH=/usr/local/bin/install:$PATH
+
+stride.sh
 
 # Clean up dependencies
 apt-get autoremove --purge --yes ${BUILD}
