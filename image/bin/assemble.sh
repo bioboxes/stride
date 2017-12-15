@@ -4,39 +4,30 @@ set -o errexit
 set -o nounset
 set -o xtrace
 
+function finish {
+	rm -rf /tmp/tmp.*
+}
+trap finish EXIT
+
+
 TASK=$1
 CMD=$(fetch_task_from_taskfile.sh $TASKFILE $TASK)
-READS=$(biobox_args.sh 'select(has("fastq")) | .fastq | map(.value) | join(" ")')
+export READS=$(biobox_args.sh 'select(has("fastq")) | .fastq | map(.value) | join(" ")')
+export CONTIGS=/bbx/output/contigs.fa
+
+# Specify memory usage for bbtools
+MEM_IN_KB=$(grep MemTotal: /proc/meminfo | tr -s ' ' | cut -f 2 -d ' ')
+USAGE_PERCENT=85
+let HEAP_IN_KB=${MEM_IN_KB}*${USAGE_PERCENT}/100
+export _JAVA_OPTIONS="-Xmx${HEAP_IN_KB}k -Xms${HEAP_IN_KB}k"
+
+# Manually calculate number of cells for normalisation
+BBNORM_CELLS_PER_KB=100
+let BBNORM_CELLS=${MEM_IN_KB}*${BBNORM_CELLS_PER_KB}
+export BBNORM_CELLS
 
 
-# Stride requires decompressed reads
-TMP_READS="$(mktemp -d)/reads.fq"
-mkfifo $TMP_READS
-zcat $READS > $TMP_READS &
-
-KMER=51
-
-cd /tmp
-stride preprocess --pe-mode 2 $TMP_READS --discard-quality --out reads.fa
-stride index reads.fa --algorithm ropebwt2 --threads $(nproc)
-
-# Create corrected reads
-stride correct --algorithm overlap --kmer-size ${KMER} --kmer-threshold 3 --outfile corrected.fa --threads $(nproc) reads.fa
-rm reads.*
-stride index --threads $(nproc) corrected.fa
-stride fmwalk --min-overlap 50 --threads $(nproc) --kmer-size ${KMER} --prefix corrected corrected.fa
-
-# Create merged reads
-cat corrected.merge.fa corrected.kmerized.fa > merged.fa
-rm corrected.*
-stride index --threads $(nproc) merged.fa
-stride filter --threads $(nproc) --no-kmer-check merged.fa
-
-# Assemble merged and filtered reads
-stride overlap --min-overlap 50 --threads $(nproc) merged.filter.pass.fa
-stride assemble -k ${KMER} --kmer-threshold 3 --prefix merged.filter.pass -r 150 -i 275 merged.filter.pass.asqg.gz
-
-mv StriDe-contigs.fa ${OUTPUT}/contigs.fa
+eval ${CMD}
 
 cat << EOF > ${OUTPUT}/biobox.yaml
 version: 0.9.0
